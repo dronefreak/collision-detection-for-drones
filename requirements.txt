@@ -1,0 +1,22 @@
+# Python dependencies for FlytSonar web application
+# Install with: pip install -r requirements.txt
+
+# Flask web framework
+Flask>=3.0.0
+Werkzeug>=3.0.0
+
+# CORS support for cross-origin requests
+Flask-CORS>=4.0.0
+
+# Security
+flask-talisman>=1.1.0  # Security headers (CSP, HSTS, etc.)
+
+# Development dependencies (uncomment for development)
+# pytest>=7.4.0
+# pytest-flask>=1.3.0
+# black>=23.0.0
+# flake8>=6.1.0
+
+# Note: This project currently has no requirements.txt
+# These are recommended dependencies for production deployment
+# Current setup appears to use system-installed Flask (version unknown)
