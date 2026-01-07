@@ -17,7 +17,20 @@ var jcrop_api;
 
 var finalroll=[], finalpitch=[],finalyaw=[],finalSpeedroll=[], finalSpeedpitch=[],finalSpeedyaw=[],finalposx=[],finalposy=[],finalposz=[],finalvelx=[],finalvely=[],finalvelz=[];
 
-// Input validation functions
+// ============================================================================
+// INPUT VALIDATION FUNCTIONS
+// ============================================================================
+
+/**
+ * Validate a floating-point number within a specified range
+ * @param {*} value - Value to validate (will be converted to float)
+ * @param {number} min - Minimum allowed value (inclusive)
+ * @param {number} max - Maximum allowed value (inclusive)
+ * @param {number} defaultValue - Default value to return if invalid
+ * @returns {number} Validated number or default value
+ * @example
+ * var height = validateNumber(userInput, 0.5, 50, 3.0);
+ */
 function validateNumber(value, min, max, defaultValue) {
     var num = parseFloat(value);
     if (isNaN(num) || num < min || num > max) {
@@ -26,6 +39,16 @@ function validateNumber(value, min, max, defaultValue) {
     return num;
 }
 
+/**
+ * Validate an integer within a specified range
+ * @param {*} value - Value to validate (will be converted to integer)
+ * @param {number} min - Minimum allowed value (inclusive)
+ * @param {number} max - Maximum allowed value (inclusive)
+ * @param {number} defaultValue - Default value to return if invalid
+ * @returns {number} Validated integer or default value
+ * @example
+ * var rate = validateInteger(slider.value, 1, 200, 40);
+ */
 function validateInteger(value, min, max, defaultValue) {
     var num = parseInt(value);
     if (isNaN(num) || num < min || num > max) {
@@ -34,17 +57,34 @@ function validateInteger(value, min, max, defaultValue) {
     return num;
 }
 
+/**
+ * Sanitize a string by removing dangerous characters
+ * @param {*} value - Value to sanitize (must be a string)
+ * @param {number} [maxLength=255] - Maximum allowed length
+ * @returns {string} Sanitized string
+ * @example
+ * var safeName = sanitizeString(userInput, 100);
+ */
 function sanitizeString(value, maxLength) {
-    if (typeof value !== 'string') return '';
-    // Remove potentially dangerous characters
+    if (typeof value !== 'string') {
+      return '';
+    }
+    // Remove potentially dangerous characters (XSS prevention)
     var sanitized = value.replace(/[<>'"]/g, '');
     return sanitized.substring(0, maxLength || 255);
 }
 
+/**
+ * Validate sonar sensor data array
+ * @param {Array} data - Array of sensor distance values
+ * @returns {Array<number>} Array of 6 validated sensor values (0-400 cm)
+ * @example
+ * var validatedData = validateSonarData(message.data);
+ */
 function validateSonarData(data) {
     // Validate array length
     if (!Array.isArray(data) || data.length < 6) {
-        console.error("Invalid sonar data: expected array of 6 elements");
+        console.error('Invalid sonar data: expected array of 6 elements');
         return [400, 400, 400, 400, 400, 400]; // Return max distance for all
     }
 
@@ -281,6 +321,36 @@ $("#video-select").change(function(){
 
 function socketCallback(){
 
+    /**
+     * Update sonar sensor display heights
+     * @param {number} sensorNum - Sensor number (1-6)
+     * @param {number} value - Sensor value (0-100, percentage based on distance)
+     */
+    function updateSonarDisplay(sensorNum, value) {
+      var prefix = ' .sonar' + sensorNum;
+
+      // Set main bar (inverted - 100% = no obstacle, 0% = obstacle)
+      $(prefix + '-p1').height((100 - value) + '%');
+
+      // Set colored segments based on proximity thresholds
+      if (value > 80) {
+        // Red zone: very close (0-50cm from 400cm max)
+        $(prefix + '-p2').height((value - 80) + '%');
+        $(prefix + '-p3').height('30%');
+        $(prefix + '-p4').height('50%');
+      } else if (value > 50) {
+        // Yellow zone: moderate distance (50-120cm)
+        $(prefix + '-p2').height('0%');
+        $(prefix + '-p3').height((value - 50) + '%');
+        $(prefix + '-p4').height('50%');
+      } else {
+        // Green zone: far distance (120-400cm)
+        $(prefix + '-p2').height('0%');
+        $(prefix + '-p3').height('0%');
+        $(prefix + '-p4').height(value + '%');
+      }
+    }
+
     sonarToggle = new ROSLIB.Topic({
         ros : ros,
         name : '/msg',
@@ -314,112 +384,22 @@ function socketCallback(){
       $("#table-sonar5").text(validatedData[4]);
       $("#table-sonar6").text(validatedData[5]);
 
+      // Convert sensor distances to percentages (0-100)
+      // 0cm = 100%, 400cm = 0% (inverted for display)
       var MAX_DISTANCE_CM = 400;
-      var sonar1=parseInt(100-validatedData[0]*100/MAX_DISTANCE_CM);
-      var sonar2=parseInt(100-validatedData[1]*100/MAX_DISTANCE_CM);
-      var sonar3=parseInt(100-validatedData[2]*100/MAX_DISTANCE_CM);
-      var sonar4=parseInt(100-validatedData[3]*100/MAX_DISTANCE_CM);
-      var sonar5=parseInt(100-validatedData[4]*100/MAX_DISTANCE_CM);
-      var sonar6=parseInt(100-validatedData[5]*100/MAX_DISTANCE_CM);
-      // console.log(sona);
+      var sonarValues = [
+        parseInt(100 - validatedData[0] * 100 / MAX_DISTANCE_CM),
+        parseInt(100 - validatedData[1] * 100 / MAX_DISTANCE_CM),
+        parseInt(100 - validatedData[2] * 100 / MAX_DISTANCE_CM),
+        parseInt(100 - validatedData[3] * 100 / MAX_DISTANCE_CM),
+        parseInt(100 - validatedData[4] * 100 / MAX_DISTANCE_CM),
+        parseInt(100 - validatedData[5] * 100 / MAX_DISTANCE_CM)
+      ];
 
-        $(" .sonar1-p1").height((100-sonar1)+"%");
-        $(" .sonar2-p1").height((100-sonar2)+"%");
-        $(" .sonar3-p1").height((100-sonar3)+"%");
-        $(" .sonar4-p1").height((100-sonar4)+"%");
-        $(" .sonar5-p1").height((100-sonar5)+"%");
-        $(" .sonar6-p1").height((100-sonar6)+"%");
-      if (sonar1 > 80){
-
-        $(" .sonar1-p2").height((sonar1-80)+"%");
-        $(" .sonar1-p3").height("30%");
-        $(" .sonar1-p4").height("50%");
-      } else if(sonar1 >50){
-        $(" .sonar1-p2").height("0%");
-        $(" .sonar1-p3").height((sonar1-50)+"%");
-        $(" .sonar1-p4").height("50%");
-      }else{
-        $(" .sonar1-p2").height("0%");
-        $(" .sonar1-p3").height("0%");
-        $(" .sonar1-p4").height(sonar1+"%");
+      // Update all sonar displays using the helper function
+      for (var i = 0; i < 6; i++) {
+        updateSonarDisplay(i + 1, sonarValues[i]);
       }
-
-
-      if (sonar2 > 80){
-
-        $(" .sonar2-p2").height((sonar2-80)+"%");
-        $(" .sonar2-p3").height("30%");
-        $(" .sonar2-p4").height("50%");
-      } else if(sonar2 >50){
-        $(" .sonar2-p2").height("0%");
-        $(" .sonar2-p3").height((sonar2-50)+"%");
-        $(" .sonar2-p4").height("50%");
-      }else{
-        $(" .sonar2-p2").height("0%");
-        $(" .sonar2-p3").height("0%");
-        $(" .sonar2-p4").height(sonar2+"%");
-      }
-
-      if (sonar3 > 80){
-
-        $(" .sonar3-p2").height((sonar3-80)+"%");
-        $(" .sonar3-p3").height("30%");
-        $(" .sonar3-p4").height("50%");
-      } else if(sonar3 >50){
-        $(" .sonar3-p2").height("0%");
-        $(" .sonar3-p3").height((sonar3-50)+"%");
-        $(" .sonar3-p4").height("50%");
-      }else{
-        $(" .sonar3-p2").height("0%");
-        $(" .sonar3-p3").height("0%");
-        $(" .sonar3-p4").height(sonar3+"%");
-      }
-
-      if (sonar4 > 80){
-
-        $(" .sonar4-p2").height((sonar4-80)+"%");
-        $(" .sonar4-p3").height("30%");
-        $(" .sonar4-p4").height("50%");
-      } else if(sonar4 >50){
-        $(" .sonar4-p2").height("0%");
-        $(" .sonar4-p3").height((sonar4-50)+"%");
-        $(" .sonar4-p4").height("50%");
-      }else{
-        $(" .sonar4-p2").height("0%");
-        $(" .sonar4-p3").height("0%");
-        $(" .sonar4-p4").height(sonar4+"%");
-      }
-
-      if (sonar5 > 80){
-
-        $(" .sonar5-p2").height((sonar5-80)+"%");
-        $(" .sonar5-p3").height("30%");
-        $(" .sonar5-p4").height("50%");
-      } else if(sonar5 >50){
-        $(" .sonar5-p2").height("0%");
-        $(" .sonar5-p3").height((sonar5-50)+"%");
-        $(" .sonar5-p4").height("50%");
-      }else{
-        $(" .sonar5-p2").height("0%");
-        $(" .sonar5-p3").height("0%");
-        $(" .sonar5-p4").height(sonar5+"%");
-      }
-
-      if (sonar6 > 80){
-
-        $(" .sonar6-p2").height((sonar6-80)+"%");
-        $(" .sonar6-p3").height("30%");
-        $(" .sonar6-p4").height("50%");
-      } else if(sonar6 >50){
-        $(" .sonar6-p2").height("0%");
-        $(" .sonar6-p3").height((sonar6-50)+"%");
-        $(" .sonar6-p4").height("50%");
-      }else{
-        $(" .sonar6-p2").height("0%");
-        $(" .sonar6-p3").height("0%");
-        $(" .sonar6-p4").height(sonar6+"%");
-      }
-      // console.log(sonar2);
 
     });
 
@@ -468,158 +448,6 @@ function socketCallback(){
 
 
     });
-
-    // var listenerLocPosSetpoint = new ROSLIB.Topic({
-    //         ros :ros,
-    //         name : '/'+namespace+'/mavros/setpoint_raw/target_local',
-    //         messageType : 'mavros_msgs/PositionTarget'
-    // });
-
-    // listenerLocPosSetpoint.subscribe(function(message) {
-    //     $('#posXSetpoint').text(round(message.position.x,3));
-    //     $('#posYSetpoint').text(round(message.position.y,3));
-    //     $('#posZSetpoint').text(round(message.position.z,3));
-    //     $('#yawSetpoint').text(round(message.yaw,3));
-
-    // });
-
-    // var listenerSitlLocPosSetpoint = new ROSLIB.Topic({
-    //         ros :ros,
-    //         name : '/'+namespace+'/iris/vehicle_local_position_setpoint',
-    //         messageType : 'px4/vehicle_local_position_setpoint'
-    // });
-
-    // listenerSitlLocPosSetpoint.subscribe(function(message) {
-
-    //     $('#posXSetpoint').text(round(message.x,3));
-    //     $('#posYSetpoint').text(round(message.y,3));
-    //     $('#posZSetpoint').text(round(message.z,3));
-    //     $('#yawSetpoint').text(round(message.yaw,3));
-
-    // });
-
-    // var listenerObjectCentroid = new ROSLIB.Topic({
-    //         ros :ros,
-    //         name : '/'+namespace+'/object/centroid',
-    //         messageType : 'std_msgs/Float32MultiArray'
-    // });
-
-    // listenerObjectCentroid.subscribe(function(message) {
-    //      $("#imageFrameX").html(round(message.data[0],3));
-    //      $("#imageFrameY").html(round(message.data[1],3));
-    //      $("#bodyFrameX").html(round(message.data[2],3));
-    //      $("#bodyFrameY").html(round(message.data[3],3));
-    //      $("#NEDFrameX").html(round(message.data[4],3));
-    //      $("#NEDFrameY").html(round(message.data[5],3));
-
-    //     /*Knob*/
-
-
-    // });
-
-   //  var listenerLocalPosition = new ROSLIB.Topic({
-   //         ros :ros,
-   //         name : '/'+namespace+'/mavros/local_position/local',
-   //         messageType : 'geometry_msgs/TwistStamped',
-   //         throttle_rate: 200
-   // });
-
-   //  var velxList=[],velyList=[],velzList=[],posxList=[],posyList=[],poszList=[];
-
-   // listenerLocalPosition.subscribe(function(message) {
-   //          // console.log(message);
-   //         $('#posx').text(round(message.twist.linear.x,3));
-   //         $('#posy').text(round(message.twist.linear.y,3));
-   //         $('#posz').text(round(message.twist.linear.z,3));
-   //         // $('#velx').text(round(message.twist.angular.x,3));
-   //         // $('#vely').text(round(message.twist.angular.y,3));
-   //         // $('#velz').text(round(message.twist.angular.z,3));
-   //         if(flagPagePlot){
-   //             if(velxList.length<200){
-   //              posxList.push(round(message.twist.linear.x,3));
-   //              posyList.push(round(message.twist.linear.y,3));
-   //              poszList.push(round(message.twist.linear.z,3));
-   //              velxList.push(round(message.twist.angular.x,3));
-   //              velyList.push(round(message.twist.angular.y,3));
-   //              velzList.push(round(message.twist.angular.z,3));
-   //          }
-   //          else{
-
-   //              posxzList.shift();
-   //              posyList.shift();
-   //              poszList.shift();
-   //              velxzList.shift();
-   //              velyList.shift();
-   //              velzList.shift();
-   //          }
-
-   //          finalvelx=[], finalvely=[],finalvelz=[],finalposx=[], finalposy=[],finalposz=[];
-   //          for (var i = 0; i < velxList.length; ++i) {
-   //              finalposx.push([i, posxList[i]]);
-   //              finalposy.push([i, posyList[i]]);
-   //              finalposz.push([i, poszList[i]]);
-   //              finalvelx.push([i, velxList[i]]);
-   //              finalvely.push([i, velyList[i]]);
-   //              finalvelz.push([i, velzList[i]]);
-
-   //          }
-   //      }
-   // });
-
-
-
-    // var listenerRosout = new ROSLIB.Topic({
-    //         ros :ros,
-    //         name : '/rosout',
-    //         messageType : 'rosgraph_msgs/Log',
-    //         throttle_rate: 50
-    // });
-
-    // listenerRosout.subscribe(function(message) {
-
-    //     var text= message.msg.search("FCU");
-    //     if(text>=0){
-    //         $(".rosout-messages,.sidebar-rosout-messages").append("\n--  "+message.msg);
-    //         // $(".rosout-messages").animate({
-    //         //     scrollTop:$(".rosout-messages")[0].scrollHeight - $(".rosout-messages").height()
-    //         // },50);
-    //         $(".sidebar-rosout-messages").animate({
-    //             scrollTop:$(".sidebar-rosout-messages")[0].scrollHeight - $(".sidebar-rosout-messages").height()
-    //         },50);
-
-    //     } 
-    // });
-    // var listenerExtendedState = new ROSLIB.Topic({
-    //         ros :ros,
-    //         name : '/'+namespace+'/mavros/extended_state',
-    //         messageType : 'mavros_msgs/ExtendedState',
-    //         throttle_rate: 200
-    // });
-
-
-    // listenerExtendedState.subscribe(function(message) {
-    //     landed_state=message.landed_state;
-
-    //     if (landed_state==2 ){
-
-
-    //             // $(".take-off").prop("disabled",false);
-    //             $(".take-off").addClass("land");
-    //             $(".land").removeClass("take-off");
-    //             $(".land").attr("href","");
-    //             $(".land").html("Land");
-
-    //     }else if(landed_state==1){
-
-
-    //             // $(".land").prop("disabled",false);
-    //             $(".land").addClass("take-off");
-    //             $(".take-off").removeClass("land");
-    //             $(".take-off").attr("href","");
-    //             $(".take-off").html("take-off");
-    //     }
-
-    // });
 
     var listenerState = new ROSLIB.Topic({
             ros :ros,

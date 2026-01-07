@@ -1,0 +1,64 @@
+{
+  "env": {
+    "browser": true,
+    "jquery": true,
+    "es6": false
+  },
+  "extends": "eslint:recommended",
+  "parserOptions": {
+    "ecmaVersion": 5,
+    "sourceType": "script"
+  },
+  "globals": {
+    "ROSLIB": "readonly",
+    "google": "readonly",
+    "restPath": "writable",
+    "ros": "writable",
+    "namespace": "writable"
+  },
+  "rules": {
+    "no-unused-vars": ["warn", {
+      "vars": "local",
+      "args": "none"
+    }],
+    "no-console": "off",
+    "no-undef": "error",
+    "semi": ["error", "always"],
+    "quotes": ["warn", "single", {
+      "avoidEscape": true,
+      "allowTemplateLiterals": true
+    }],
+    "eqeqeq": ["warn", "always"],
+    "curly": ["warn", "all"],
+    "brace-style": ["warn", "1tbs"],
+    "indent": ["warn", 2, {
+      "SwitchCase": 1
+    }],
+    "no-trailing-spaces": "warn",
+    "space-before-function-paren": ["warn", {
+      "anonymous": "never",
+      "named": "never",
+      "asyncArrow": "always"
+    }],
+    "keyword-spacing": "warn",
+    "space-infix-ops": "warn",
+    "comma-spacing": "warn",
+    "no-multiple-empty-lines": ["warn", {
+      "max": 2
+    }],
+    "no-var": "off",
+    "prefer-const": "off",
+    "prefer-arrow-callback": "off"
+  },
+  "ignorePatterns": [
+    "flytsonar/static/js/*.min.js",
+    "flytsonar/static/bs3/**",
+    "flytsonar/static/js/jquery*.js",
+    "flytsonar/static/js/flot-chart/**",
+    "flytsonar/static/js/ion.rangeSlider*/**",
+    "flytsonar/static/js/select2/**",
+    "flytsonar/static/js/gritter/**",
+    "flytsonar/static/js/jcrop/**",
+    "node_modules/**"
+  ]
+}
