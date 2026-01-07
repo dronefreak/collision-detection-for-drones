@@ -16,6 +16,44 @@ var global_ob_track_ct, global_ob_track_at, global_ob_track_mr, global_ob_track_
 var jcrop_api;
 
 var finalroll=[], finalpitch=[],finalyaw=[],finalSpeedroll=[], finalSpeedpitch=[],finalSpeedyaw=[],finalposx=[],finalposy=[],finalposz=[],finalvelx=[],finalvely=[],finalvelz=[];
+
+// Input validation functions
+function validateNumber(value, min, max, defaultValue) {
+    var num = parseFloat(value);
+    if (isNaN(num) || num < min || num > max) {
+        return defaultValue;
+    }
+    return num;
+}
+
+function validateInteger(value, min, max, defaultValue) {
+    var num = parseInt(value);
+    if (isNaN(num) || num < min || num > max) {
+        return defaultValue;
+    }
+    return num;
+}
+
+function sanitizeString(value, maxLength) {
+    if (typeof value !== 'string') return '';
+    // Remove potentially dangerous characters
+    var sanitized = value.replace(/[<>'"]/g, '');
+    return sanitized.substring(0, maxLength || 255);
+}
+
+function validateSonarData(data) {
+    // Validate array length
+    if (!Array.isArray(data) || data.length < 6) {
+        console.error("Invalid sonar data: expected array of 6 elements");
+        return [400, 400, 400, 400, 400, 400]; // Return max distance for all
+    }
+
+    // Validate each element (should be 0-400 cm)
+    return data.slice(0, 6).map(function(val) {
+        return validateInteger(val, 0, 400, 400);
+    });
+}
+
 jQuery.fn.rotate = function(degrees) {
     $(this).css({'-webkit-transform' : 'rotate('+ degrees +'deg)',
                  '-moz-transform' : 'rotate('+ degrees +'deg)',
@@ -120,7 +158,15 @@ function drawDash(lat1,lat2,color) {
 }
 
 var flag=0;
+var getNamespaceRetryCount = 0;
+var getNamespaceMaxRetries = 5;
+var getNamespaceRetryDelay = 2000; // Start with 2 seconds
+
 function getNamespace(){
+    if(getNamespaceRetryCount >= getNamespaceMaxRetries) {
+        console.error("Failed to get namespace after " + getNamespaceMaxRetries + " attempts");
+        return;
+    }
 
     var msgdata = {};
     $.ajax({
@@ -131,6 +177,9 @@ function getNamespace(){
        url: restPath+"/ros/get_global_namespace",
        success: function(data){
            if(data.success){
+                // Reset retry count on success
+                getNamespaceRetryCount = 0;
+                getNamespaceRetryDelay = 2000;
                 namespace=data.param_info.param_value;
                //  $("#flytpod-name").val(namespace);          
                // $("#flytName").html(namespace);
@@ -178,8 +227,18 @@ function getNamespace(){
 
             }
        },
-       error: function(){
-           getNamespace();
+       error: function(xhr, status, error){
+           // Exponential backoff retry
+           getNamespaceRetryCount++;
+           console.error("Failed to get namespace (attempt " + getNamespaceRetryCount + "/" + getNamespaceMaxRetries + "): " + error);
+
+           if(getNamespaceRetryCount < getNamespaceMaxRetries) {
+               setTimeout(function(){
+                   getNamespace();
+               }, getNamespaceRetryDelay);
+               // Exponential backoff: double the delay for next retry
+               getNamespaceRetryDelay *= 2;
+           }
        }
            });
 }
@@ -245,20 +304,23 @@ function socketCallback(){
     });
 
     listenerSonar.subscribe(function(message) {
+      // Validate sonar data
+      var validatedData = validateSonarData(message.data);
 
-      $("#table-sonar1").text(message.data[0]);
-      $("#table-sonar2").text(message.data[1]);
-      $("#table-sonar3").text(message.data[2]);
-      $("#table-sonar4").text(message.data[3]);
-      $("#table-sonar5").text(message.data[4]);
-      $("#table-sonar6").text(message.data[5]);
+      $("#table-sonar1").text(validatedData[0]);
+      $("#table-sonar2").text(validatedData[1]);
+      $("#table-sonar3").text(validatedData[2]);
+      $("#table-sonar4").text(validatedData[3]);
+      $("#table-sonar5").text(validatedData[4]);
+      $("#table-sonar6").text(validatedData[5]);
 
-      var sonar1=parseInt(100-message.data[0]*100/400);
-      var sonar2=parseInt(100-message.data[1]*100/400);
-      var sonar3=parseInt(100-message.data[2]*100/400);
-      var sonar4=parseInt(100-message.data[3]*100/400);
-      var sonar5=parseInt(100-message.data[4]*100/400);
-      var sonar6=parseInt(100-message.data[5]*100/400);
+      var MAX_DISTANCE_CM = 400;
+      var sonar1=parseInt(100-validatedData[0]*100/MAX_DISTANCE_CM);
+      var sonar2=parseInt(100-validatedData[1]*100/MAX_DISTANCE_CM);
+      var sonar3=parseInt(100-validatedData[2]*100/MAX_DISTANCE_CM);
+      var sonar4=parseInt(100-validatedData[3]*100/MAX_DISTANCE_CM);
+      var sonar5=parseInt(100-validatedData[4]*100/MAX_DISTANCE_CM);
+      var sonar6=parseInt(100-validatedData[5]*100/MAX_DISTANCE_CM);
       // console.log(sona);
 
         $(" .sonar1-p1").height((100-sonar1)+"%");
@@ -348,7 +410,7 @@ function socketCallback(){
         $(" .sonar6-p2").height((sonar6-80)+"%");
         $(" .sonar6-p3").height("30%");
         $(" .sonar6-p4").height("50%");
-      } else if(sonar2 >50){
+      } else if(sonar6 >50){
         $(" .sonar6-p2").height("0%");
         $(" .sonar6-p3").height((sonar6-50)+"%");
         $(" .sonar6-p4").height("50%");
@@ -1130,7 +1192,8 @@ $(".uncheck-all").click(function(){
 $(".takeoff").click(function(){
     // $(".take-off").prop("disabled",true);
     var msgdata={};
-    msgdata["takeoff_alt"]=parseFloat($("#takeoffheight").val());
+    var takeoffHeight = validateNumber($("#takeoffheight").val(), 0.5, 50, 3.0);
+    msgdata["takeoff_alt"]=takeoffHeight;
     $.ajax({
        type: "POST",
        headers: { 'Authentication-Token': sessionStorage.getItem('token') },
@@ -1628,15 +1691,17 @@ $('#sonar-6').on('switchChange.bootstrapSwitch', function(event, state) {
 
 
 $('#sonar-data-rate').change(function(){
-  $("#rate-value").text("The current Data Rate is "+$(this).val()+" Hz");
+  var rate = validateInteger($(this).val(), 1, 200, 40);
+  $("#rate-value").text("The current Data Rate is "+rate+" Hz");
 
-  sonarData.data[0]=parseInt($(this).val());
+  sonarData.data[0]=rate;
   sonarToggle.publish(sonarData);
 });
 
 $('#sonar-data-threshold').change(function(){
-  $("#threshold-value").text("The current Threshold is "+$(this).val()+" cm");
+  var threshold = validateInteger($(this).val(), 0, 400, 20);
+  $("#threshold-value").text("The current Threshold is "+threshold+" cm");
 
-  sonarData.data[7]=parseInt($(this).val());
+  sonarData.data[7]=threshold;
   sonarToggle.publish(sonarData);
 });
