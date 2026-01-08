@@ -39,7 +39,7 @@ jobs:
             This PR is very large. Consider breaking it into smaller PRs for easier review.
 
       - name: Add labels based on title
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const title = context.payload.pull_request.title.toLowerCase();
