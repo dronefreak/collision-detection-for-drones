@@ -1,0 +1,29 @@
+# Draft releases automatically
+# Creates draft releases with auto-generated changelog from PRs
+
+name: Release Drafter
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+    types: [opened, reopened, synchronize]
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: read
+
+jobs:
+  update_release_draft:
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: release-drafter/release-drafter@v6
+        with:
+          config-name: release-drafter.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

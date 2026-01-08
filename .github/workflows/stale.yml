@@ -1,0 +1,58 @@
+# Close stale issues and PRs
+# Automatically marks issues/PRs as stale after inactivity and closes them
+
+name: 'Close stale issues and PRs'
+
+on:
+  schedule:
+    # Run daily at 1:00 AM UTC
+    - cron: '0 1 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          # General settings
+          days-before-stale: 60
+          days-before-close: 7
+          operations-per-run: 30
+
+          # Stale issue settings
+          stale-issue-message: >
+            This issue has been automatically marked as stale because it has not had
+            recent activity. It will be closed in 7 days if no further activity occurs.
+            Thank you for your contributions.
+          close-issue-message: >
+            This issue was closed because it has been stale for 7 days with no activity.
+            If you believe this issue is still relevant, please reopen it or create a new issue.
+          stale-issue-label: 'stale'
+
+          # Stale PR settings
+          stale-pr-message: >
+            This pull request has been automatically marked as stale because it has not had
+            recent activity. It will be closed in 7 days if no further activity occurs.
+            Thank you for your contributions.
+          close-pr-message: >
+            This pull request was closed because it has been stale for 7 days with no activity.
+            If you would like to continue this work, please reopen the PR or submit a new one.
+          stale-pr-label: 'stale'
+
+          # Exempt labels - issues/PRs with these labels will never be marked stale
+          exempt-issue-labels: 'pinned,security,bug,enhancement,help-wanted,good-first-issue'
+          exempt-pr-labels: 'pinned,security,work-in-progress'
+
+          # Exempt milestones - don't mark stale if assigned to a milestone
+          exempt-all-milestones: true
+
+          # Exempt assignees - don't mark stale if assigned to someone
+          exempt-all-assignees: false
+
+          # Enable debug logging
+          debug-only: false
