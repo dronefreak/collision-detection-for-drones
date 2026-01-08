@@ -1,0 +1,80 @@
+# Configuration for PR auto-labeler
+# Labels PRs based on which files are changed
+
+# Python files
+python:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.py'
+      - 'requirements.txt'
+
+# JavaScript files
+javascript:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'flytsonar/static/js/**/*.js'
+      - '**/*.js'
+
+# Arduino/Firmware
+arduino:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'arduino/**/*.ino'
+      - 'arduino/**/*.cpp'
+      - 'arduino/**/*.h'
+
+# Frontend (HTML/CSS)
+frontend:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.html'
+      - '**/*.css'
+      - 'flytsonar/static/**'
+
+# Documentation
+documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.md'
+      - 'docs/**'
+
+# Tests
+tests:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'tests/**'
+      - '**/*test*.py'
+      - '**/*test*.js'
+
+# CI/CD
+ci-cd:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/**'
+      - '.github/workflows/**'
+
+# Configuration
+configuration:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.json'
+      - '**/*.yml'
+      - '**/*.yaml'
+      - '.eslintrc*'
+      - '.editorconfig'
+      - '.gitignore'
+
+# Dependencies
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'requirements.txt'
+      - 'package.json'
+      - 'package-lock.json'
+
+# 3D Models/Hardware
+hardware:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'STL_files/**'
+      - '**/*.stl'

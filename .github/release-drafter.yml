@@ -1,0 +1,112 @@
+# Configuration for Release Drafter
+# Automatically generates release notes from pull requests
+
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+
+categories:
+  - title: '🚀 Features'
+    labels:
+      - 'enhancement'
+      - 'feature'
+  - title: '🐛 Bug Fixes'
+    labels:
+      - 'bug'
+      - 'bugfix'
+      - 'fix'
+  - title: '🔒 Security'
+    labels:
+      - 'security'
+  - title: '📝 Documentation'
+    labels:
+      - 'documentation'
+      - 'docs'
+  - title: '🧪 Tests'
+    labels:
+      - 'tests'
+      - 'testing'
+  - title: '⚡ Performance'
+    labels:
+      - 'performance'
+      - 'optimization'
+  - title: '♻️ Refactoring'
+    labels:
+      - 'refactoring'
+      - 'cleanup'
+  - title: '🔧 Maintenance'
+    labels:
+      - 'chore'
+      - 'dependencies'
+      - 'ci-cd'
+  - title: '🔨 Hardware'
+    labels:
+      - 'hardware'
+      - 'arduino'
+
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+change-title-escapes: '\<*_&'
+
+version-resolver:
+  major:
+    labels:
+      - 'major'
+      - 'breaking'
+  minor:
+    labels:
+      - 'minor'
+      - 'enhancement'
+      - 'feature'
+  patch:
+    labels:
+      - 'patch'
+      - 'bug'
+      - 'bugfix'
+      - 'fix'
+      - 'chore'
+      - 'dependencies'
+  default: patch
+
+template: |
+  ## What's Changed
+
+  $CHANGES
+
+  ## Contributors
+
+  Thank you to all contributors who made this release possible! 🎉
+
+  $CONTRIBUTORS
+
+autolabeler:
+  - label: 'documentation'
+    files:
+      - '*.md'
+      - 'docs/**/*'
+    title:
+      - '/docs?/i'
+  - label: 'bug'
+    title:
+      - '/fix/i'
+      - '/bug/i'
+  - label: 'enhancement'
+    title:
+      - '/feat/i'
+      - '/feature/i'
+      - '/enhance/i'
+  - label: 'dependencies'
+    files:
+      - 'requirements.txt'
+      - 'package.json'
+      - 'package-lock.json'
+  - label: 'python'
+    files:
+      - '**/*.py'
+  - label: 'javascript'
+    files:
+      - '**/*.js'
+  - label: 'arduino'
+    files:
+      - 'arduino/**/*'
+  - label: 'ci-cd'
+    files:
+      - '.github/**/*'
